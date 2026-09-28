@@ -1,0 +1,30 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- Neutral Background -->
+    <path
+        android:fillColor="#F6F5F2"
+        android:pathData="M0,0h200v200h-200z" />
+    
+    <!-- Soft Rounded Frame -->
+    <path
+        android:fillColor="#EBE8E1"
+        android:pathData="M30,40 h140 a10,10 0 0 1 10,10 v100 a10,10 0 0 1 -10,10 h-140 a10,10 0 0 1 -10,-10 v-100 a10,10 0 0 1 10,-10 z" />
+
+    <!-- Neutral Image Placeholder Sun / Circle -->
+    <path
+        android:fillColor="#C8C4B7"
+        android:pathData="M65,75 a12,12 0 1 0 0.001,0 z" />
+
+    <!-- Neutral Image Placeholder Mountain / Contours -->
+    <path
+        android:fillColor="#B5B0A2"
+        android:pathData="M35,145 L75,95 L105,130 L130,105 L165,145 Z" />
+
+    <!-- Subtle Henna / Leaf Neutral Motif -->
+    <path
+        android:fillColor="#8C867A"
+        android:pathData="M100,60 C98,68 92,72 88,75 C93,76 97,80 98,88 C100,80 104,76 109,75 C105,72 99,68 100,60 Z" />
+</vector>

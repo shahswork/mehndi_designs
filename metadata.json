@@ -1,0 +1,6 @@
+{
+  "name": "Mehndi Design",
+  "description": "A lightweight Mehndi Design browsing app with categorized designs, step-by-step tutorials, favorites, and real-time Firebase support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
