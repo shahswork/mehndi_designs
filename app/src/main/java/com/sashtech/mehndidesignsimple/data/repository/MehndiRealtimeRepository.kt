@@ -21,6 +21,9 @@ import com.sashtech.mehndidesignsimple.data.model.MehndiCategory
 import com.sashtech.mehndidesignsimple.data.model.MehndiDesign
 import com.sashtech.mehndidesignsimple.data.model.StepByStepTutorial
 import com.sashtech.mehndidesignsimple.data.model.TutorialStep
+import com.google.firebase.database.Query
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,6 +36,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -56,13 +60,7 @@ class MehndiRealtimeRepository(
 
     private val database: FirebaseDatabase? by lazy {
         databaseProvider?.invoke() ?: runCatching {
-            val db = FirebaseDatabase.getInstance()
-            try {
-                db.setPersistenceEnabled(true)
-            } catch (_: Exception) {
-                // Persistence can only be set before any other usage
-            }
-            db
+            FirebaseDatabase.getInstance()
         }.getOrNull()
     }
 
@@ -71,6 +69,31 @@ class MehndiRealtimeRepository(
         syncDesignsFromFirebase()
         syncTutorialsFromFirebase()
     }
+
+    /**
+     * Safely reads a single snapshot from a Query using addListenerForSingleValueEvent,
+     * preventing multiple simultaneous listen() registrations for identical QuerySpecs.
+     */
+    private suspend fun Query.awaitSingleValue(): DataSnapshot =
+        suspendCancellableCoroutine { cont ->
+            val listener = object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (cont.isActive) {
+                        cont.resume(snapshot)
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    if (cont.isActive) {
+                        cont.resumeWithException(error.toException())
+                    }
+                }
+            }
+            addListenerForSingleValueEvent(listener)
+            cont.invokeOnCancellation {
+                removeEventListener(listener)
+            }
+        }
 
     /**
      * Checks if local Room database contains any cached categories, designs, or tutorials.
@@ -95,17 +118,10 @@ class MehndiRealtimeRepository(
 
         return withTimeoutOrNull(timeoutMs) {
             try {
-                // Ensure nodes are marked for offline sync
-                runCatching {
-                    db.getReference(NODE_CATEGORIES).keepSynced(true)
-                    db.getReference(NODE_DESIGNS).keepSynced(true)
-                    db.getReference(NODE_STEP_BY_STEP).keepSynced(true)
-                }
-
                 // 1. Fetch Categories
                 val catDeferred = async(Dispatchers.IO) {
                     try {
-                        val snapshot = db.getReference(NODE_CATEGORIES).get().await()
+                        val snapshot = db.getReference(NODE_CATEGORIES).awaitSingleValue()
                         if (snapshot.exists()) {
                             val items = mutableListOf<MehndiCategory>()
                             val entityList = mutableListOf<CachedCategoryEntity>()
@@ -162,7 +178,7 @@ class MehndiRealtimeRepository(
                 // 2. Fetch Designs
                 val designsDeferred = async(Dispatchers.IO) {
                     try {
-                        val snapshot = db.getReference(NODE_DESIGNS).get().await()
+                        val snapshot = db.getReference(NODE_DESIGNS).awaitSingleValue()
                         if (snapshot.exists()) {
                             val items = mutableListOf<MehndiDesign>()
                             for (child in snapshot.children) {
@@ -185,7 +201,7 @@ class MehndiRealtimeRepository(
                 // 3. Fetch Step-by-Step Tutorials
                 val tutDeferred = async(Dispatchers.IO) {
                     try {
-                        val snapshot = db.getReference(NODE_STEP_BY_STEP).get().await()
+                        val snapshot = db.getReference(NODE_STEP_BY_STEP).awaitSingleValue()
                         if (snapshot.exists()) {
                             val tutorials = mutableListOf<StepByStepTutorial>()
                             val allSteps = mutableListOf<CachedTutorialStepEntity>()
@@ -626,7 +642,7 @@ class MehndiRealtimeRepository(
         if (db != null) {
             repositoryScope.launch {
                 try {
-                    val snapshot = db.getReference(NODE_DESIGNS).child(designId).get().await()
+                    val snapshot = db.getReference(NODE_DESIGNS).child(designId).awaitSingleValue()
                     if (snapshot.exists()) {
                         val item = parseDesignSnapshot(snapshot)
                         if (item != null) {
@@ -758,7 +774,7 @@ class MehndiRealtimeRepository(
                 // 1. Refresh Categories
                 val catDeferred = async {
                 try {
-                    val snapshot = db.getReference(NODE_CATEGORIES).get().await()
+                    val snapshot = db.getReference(NODE_CATEGORIES).awaitSingleValue()
                     if (snapshot.exists()) {
                         val items = mutableListOf<MehndiCategory>()
                         val entityList = mutableListOf<CachedCategoryEntity>()
@@ -812,7 +828,7 @@ class MehndiRealtimeRepository(
             // 2. Refresh Designs
             val designDeferred = async {
                 try {
-                    val snapshot = db.getReference(NODE_DESIGNS).get().await()
+                    val snapshot = db.getReference(NODE_DESIGNS).awaitSingleValue()
                     if (snapshot.exists()) {
                         val items = mutableListOf<MehndiDesign>()
                         for (child in snapshot.children) {
@@ -832,7 +848,7 @@ class MehndiRealtimeRepository(
             // 3. Refresh Step-by-Step Tutorials
             val tutDeferred = async {
                 try {
-                    val snapshot = db.getReference(NODE_STEP_BY_STEP).get().await()
+                    val snapshot = db.getReference(NODE_STEP_BY_STEP).awaitSingleValue()
                     if (snapshot.exists()) {
                         val tutorials = mutableListOf<StepByStepTutorial>()
                         val allSteps = mutableListOf<CachedTutorialStepEntity>()
@@ -903,7 +919,7 @@ class MehndiRealtimeRepository(
         val db = database ?: return
         val ref = db.getReference(NODE_CATEGORIES)
         try {
-            val snapshot = ref.get().await()
+            val snapshot = ref.awaitSingleValue()
             if (!snapshot.exists()) {
                 categoryDao?.clearAllCategories()
                 return
@@ -960,7 +976,7 @@ class MehndiRealtimeRepository(
             }
 
             // Also refresh step-by-step tutorials from Firebase Realtime Database
-            val tutSnapshot = db.getReference(NODE_STEP_BY_STEP).get().await()
+            val tutSnapshot = db.getReference(NODE_STEP_BY_STEP).awaitSingleValue()
             if (tutSnapshot.exists()) {
                 val tutorials = mutableListOf<StepByStepTutorial>()
                 val allSteps = mutableListOf<CachedTutorialStepEntity>()
@@ -1113,7 +1129,7 @@ class MehndiRealtimeRepository(
         if (db != null) {
             repositoryScope.launch {
                 try {
-                    val snapshot = db.getReference(NODE_STEP_BY_STEP).child(tutorialId).get().await()
+                    val snapshot = db.getReference(NODE_STEP_BY_STEP).child(tutorialId).awaitSingleValue()
                     if (snapshot.exists()) {
                         val item = parseTutorialSnapshot(snapshot)
                         if (item != null) {
@@ -1143,7 +1159,7 @@ class MehndiRealtimeRepository(
         if (db != null) {
             repositoryScope.launch {
                 try {
-                    val snapshot = db.getReference(NODE_STEP_BY_STEP).child(tutorialId).child(NODE_STEPS).get().await()
+                    val snapshot = db.getReference(NODE_STEP_BY_STEP).child(tutorialId).child(NODE_STEPS).awaitSingleValue()
                     if (snapshot.exists()) {
                         val items = mutableListOf<TutorialStep>()
                         for (child in snapshot.children) {

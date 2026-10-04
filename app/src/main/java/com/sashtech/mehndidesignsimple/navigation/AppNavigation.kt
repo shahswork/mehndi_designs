@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -26,6 +28,7 @@ import androidx.navigation.navArgument
 import com.sashtech.mehndidesignsimple.ads.AdManager
 import com.sashtech.mehndidesignsimple.ads.AdMobBanner
 import com.sashtech.mehndidesignsimple.data.repository.MehndiRepository
+import com.sashtech.mehndidesignsimple.notifications.OneSignalNotificationManager
 import com.sashtech.mehndidesignsimple.ui.screens.CategoriesScreen
 import com.sashtech.mehndidesignsimple.ui.screens.CategoryDetailScreen
 import com.sashtech.mehndidesignsimple.ui.screens.DesignDetailScreen
@@ -56,6 +59,30 @@ fun AppNavigation(
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    // Handle OneSignal push notification clicks and deep links
+    val clickedNotificationData by OneSignalNotificationManager.lastClickedNotificationData.collectAsState()
+    LaunchedEffect(clickedNotificationData) {
+        val data = clickedNotificationData ?: return@LaunchedEffect
+        val designId = data["designId"] as? String
+        val tutorialId = data["tutorialId"] as? String
+        val categoryId = data["categoryId"] as? String
+
+        when {
+            !designId.isNullOrBlank() -> {
+                navController.navigate(Screen.DesignDetail.createRoute(designId))
+                OneSignalNotificationManager.clearLastClickedNotification()
+            }
+            !tutorialId.isNullOrBlank() -> {
+                navController.navigate(Screen.StepByStepViewer.createRoute(tutorialId))
+                OneSignalNotificationManager.clearLastClickedNotification()
+            }
+            !categoryId.isNullOrBlank() -> {
+                navController.navigate(Screen.CategoryDetail.createRoute(categoryId))
+                OneSignalNotificationManager.clearLastClickedNotification()
+            }
+        }
+    }
 
     val openDesignDetail: (String) -> Unit = { designId ->
         adManager.onDesignAction(activity) {

@@ -8,8 +8,11 @@ import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
+import com.sashtech.mehndidesignsimple.ads.AdMobConstants
 import com.google.firebase.FirebaseApp
 import com.google.firebase.database.FirebaseDatabase
+import com.sashtech.mehndidesignsimple.notifications.OneSignalNotificationManager
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
@@ -22,21 +25,29 @@ class MehndiApplication : Application(), ImageLoaderFactory {
             if (FirebaseApp.getApps(this).isEmpty()) {
                 FirebaseApp.initializeApp(this)
             }
-            // Enable Firebase Realtime Database offline persistence
-            val db = FirebaseDatabase.getInstance()
-            try {
-                db.setPersistenceEnabled(true)
-            } catch (_: Exception) {
-                // Persistence can only be configured once before any DB queries
-            }
         } catch (_: Exception) {
             // Graceful fallback if Firebase configuration is pending
         }
 
-        // Initialize Google Mobile Ads SDK safely in background
+        // Initialize OneSignal Push Notifications
         try {
-            MobileAds.initialize(this) { status ->
-                android.util.Log.d("MehndiApplication", "Google MobileAds initialized: $status")
+            OneSignalNotificationManager.initialize(this)
+        } catch (e: Exception) {
+            android.util.Log.w("MehndiApplication", "OneSignal init exception: ${e.message}")
+        }
+
+        // Initialize Google Mobile Ads SDK safely in background for physical devices
+        try {
+            if (!AdMobConstants.isRunningOnEmulator()) {
+                val requestConfiguration = RequestConfiguration.Builder()
+                    .setTestDeviceIds(listOf(com.google.android.gms.ads.AdRequest.DEVICE_ID_EMULATOR))
+                    .build()
+                MobileAds.setRequestConfiguration(requestConfiguration)
+                MobileAds.initialize(this) { status ->
+                    android.util.Log.d("MehndiApplication", "Google MobileAds initialized: $status")
+                }
+            } else {
+                android.util.Log.d("MehndiApplication", "Running in emulator; skipping MobileAds init to prevent AdServices / Mesa errors.")
             }
         } catch (e: Exception) {
             android.util.Log.w("MehndiApplication", "Google MobileAds init exception: ${e.message}")

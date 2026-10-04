@@ -45,8 +45,10 @@ credentials = "1.5.0"
 googleid = "1.1.1"
 recyclerview = "1.4.0"
 cardview = "1.0.0"
+onesignal = "5.1.28"
 
 [libraries]
+onesignal = { group = "com.onesignal", name = "OneSignal", version.ref = "onesignal" }
 androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 androidx-cardview = { group = "androidx.cardview", name = "cardview", version.ref = "cardview" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

@@ -46,28 +46,28 @@ val BOTTOM_NAV_ITEMS = listOf(
     BottomNavItem(
         route = Screen.Home.route,
         title = "Home",
-        selectedIcon = Icons.Filled.Home,
+        selectedIcon = Icons.Outlined.Home,
         unselectedIcon = Icons.Outlined.Home,
         testTag = "nav_home"
     ),
     BottomNavItem(
         route = Screen.Categories.route,
         title = "Categories",
-        selectedIcon = Icons.Filled.GridView,
+        selectedIcon = Icons.Outlined.GridView,
         unselectedIcon = Icons.Outlined.GridView,
         testTag = "nav_categories"
     ),
     BottomNavItem(
         route = Screen.Favorites.route,
         title = "Favorites",
-        selectedIcon = Icons.Filled.Favorite,
+        selectedIcon = Icons.Outlined.FavoriteBorder,
         unselectedIcon = Icons.Outlined.FavoriteBorder,
         testTag = "nav_favorites"
     ),
     BottomNavItem(
         route = Screen.Settings.route,
         title = "Settings",
-        selectedIcon = Icons.Filled.Settings,
+        selectedIcon = Icons.Outlined.Settings,
         unselectedIcon = Icons.Outlined.Settings,
         testTag = "nav_settings"
     )

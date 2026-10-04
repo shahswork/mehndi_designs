@@ -57,6 +57,16 @@ class AdManager private constructor(private val appContext: Context) {
      * Attaches a real-time listener to Firebase Realtime Database 'ads' node.
      */
     private fun listenToRemoteAdConfig() {
+        if (AdMobConstants.isRunningOnEmulator()) {
+            Log.d(TAG, "Running on emulator: disabling AdMob to avoid Mesa & AdServices system failures")
+            _adsConfig.value = AdsConfig(
+                enabled = false,
+                banner = BannerAdConfig(enabled = false),
+                interstitial = InterstitialAdConfig(enabled = false)
+            )
+            return
+        }
+
         try {
             val db = FirebaseDatabase.getInstance()
             val adsRef = db.getReference(NODE_ADS)
@@ -129,6 +139,10 @@ class AdManager private constructor(private val appContext: Context) {
      * Preloads an AdMob Interstitial Ad in background.
      */
     fun preloadInterstitial(context: Context) {
+        if (AdMobConstants.isRunningOnEmulator()) {
+            return
+        }
+
         val config = _adsConfig.value
         if (!config.enabled || !config.interstitial.enabled) {
             Log.d(TAG, "Interstitial ads disabled in configuration; skipping preload")

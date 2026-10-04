@@ -41,7 +41,7 @@ fun AdMobBanner(
     adManager: AdManager = AdManager.getInstance(LocalContext.current)
 ) {
     val isInspection = LocalInspectionMode.current
-    if (isInspection) return
+    if (isInspection || AdMobConstants.isRunningOnEmulator()) return
 
     val context = LocalContext.current
     val adsConfig by adManager.adsConfig.collectAsState()

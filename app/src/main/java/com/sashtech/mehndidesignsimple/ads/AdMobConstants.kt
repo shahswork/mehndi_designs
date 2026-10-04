@@ -44,4 +44,35 @@ object AdMobConstants {
         }
         return trimmed
     }
+
+    /**
+     * Detects if the app is executing inside an Android emulator or virtual container.
+     * Prevents running AdServices measurement or OpenGL rendernode calls that fail
+     * in headless / cloud emulator environments.
+     */
+    fun isRunningOnEmulator(): Boolean {
+        return android.os.Build.FINGERPRINT.startsWith("generic") ||
+                android.os.Build.FINGERPRINT.startsWith("unknown") ||
+                android.os.Build.MODEL.contains("google_sdk", ignoreCase = true) ||
+                android.os.Build.MODEL.contains("Emulator", ignoreCase = true) ||
+                android.os.Build.MODEL.contains("Android SDK built for x86", ignoreCase = true) ||
+                android.os.Build.MODEL.contains("Cuttlefish", ignoreCase = true) ||
+                android.os.Build.MANUFACTURER.contains("Genymotion", ignoreCase = true) ||
+                (android.os.Build.BRAND.startsWith("generic") && android.os.Build.DEVICE.startsWith("generic")) ||
+                "google_sdk".equals(android.os.Build.PRODUCT, ignoreCase = true) ||
+                android.os.Build.HARDWARE.contains("goldfish", ignoreCase = true) ||
+                android.os.Build.HARDWARE.contains("ranchu", ignoreCase = true) ||
+                android.os.Build.HARDWARE.contains("cutf", ignoreCase = true) ||
+                android.os.Build.HARDWARE.contains("cvd", ignoreCase = true) ||
+                android.os.Build.HARDWARE.contains("vsoc", ignoreCase = true) ||
+                android.os.Build.PRODUCT.contains("sdk_gphone", ignoreCase = true) ||
+                android.os.Build.PRODUCT.contains("google_sdk", ignoreCase = true) ||
+                android.os.Build.PRODUCT.contains("cuttlefish", ignoreCase = true) ||
+                android.os.Build.PRODUCT.contains("cf_", ignoreCase = true) ||
+                android.os.Build.PRODUCT.contains("vsoc", ignoreCase = true) ||
+                android.os.Build.DEVICE.contains("vsoc", ignoreCase = true) ||
+                android.os.Build.DEVICE.contains("cvd", ignoreCase = true) ||
+                android.os.Build.BOARD.contains("cutf", ignoreCase = true) ||
+                android.os.Build.BOARD.contains("vsoc", ignoreCase = true)
+    }
 }

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
@@ -50,7 +51,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.imageLoader
+import com.sashtech.mehndidesignsimple.notifications.OneSignalConfig
+import com.sashtech.mehndidesignsimple.notifications.OneSignalNotificationManager
 import com.sashtech.mehndidesignsimple.ui.components.MehndiTopBar
 import com.sashtech.mehndidesignsimple.utils.AppLinksHelper
 
@@ -72,11 +76,58 @@ fun SettingsScreen(
             showSearch = false
         )
 
+        val isSubscribed by OneSignalNotificationManager.isSubscribed.collectAsStateWithLifecycle()
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // Push Notifications Section
+            item {
+                Text(
+                    text = "Push Notifications",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    ),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+                )
+
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column {
+                        SettingsRow(
+                            icon = Icons.Default.Notifications,
+                            title = "Daily Inspiration & Trends",
+                            subtitle = if (isSubscribed) "Notifications active" else "Tap to enable notifications",
+                            testTag = "settings_notifications",
+                            onClick = {
+                                if (!OneSignalConfig.isConfigured()) {
+                                    Toast.makeText(
+                                        context,
+                                        "Please configure your OneSignal App ID in .env to enable notifications.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } else {
+                                    OneSignalNotificationManager.promptForPushPermission(fallbackToSettings = true) { granted ->
+                                        if (granted) {
+                                            Toast.makeText(context, "Notifications enabled successfully!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "Notification permission was not granted.", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+
             // Downloads & Storage Section
             item {
                 Text(
